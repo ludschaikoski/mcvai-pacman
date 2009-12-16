@@ -1,9 +1,9 @@
 package search;
 
-import pacman.State;
+import pacman.Location;
 
 public interface Heuristic {
 	
-	public double calculateHeuristicCost(State current, State goal);
+	public double calculateHeuristicCost(Location current, Location goal);
 
 }

@@ -19,7 +19,7 @@ public class LocationSet implements Set<Location> {
   int[] a;
 
   public int size() {
-    int sizeCheck =0; // TODO remove this
+    int sizeCheck = 0; // TODO remove this
     for (Location l : this) {
       sizeCheck++;
     }

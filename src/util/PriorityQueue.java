@@ -70,7 +70,7 @@ public class PriorityQueue<E> extends AbstractSet<E> implements Iterator<E> {
     return compare(entryA.priority, entryB.priority);
   }
 
-  private int compare(double a, double b) {
+  private int compare(double b, double a) {
     double diff = a - b;
     if (diff > 0.0) {
       return 1;
