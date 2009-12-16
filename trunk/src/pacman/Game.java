@@ -12,6 +12,7 @@ import java.util.Set;
 
 import java.awt.Color;
 
+import player.SPToDotPlayer;
 import player.SimplePacManPlayer;
 import util.Pair;
 import util.Utils;
@@ -32,7 +33,7 @@ public class Game {
 
   private final static int dotPointsValue = 10;
 
-  private final static int defaultNumberGhosts = 4;
+  private final static int defaultNumberGhosts = 0;
 
   private static Set<Location> allLocations = makeAllLocations();
 
@@ -870,7 +871,7 @@ public class Game {
     Display display = new PacManGUI();
     // make pacman player, default keyboard
 //    PacManPlayer pacMan = new KeyboardPacManPlayer();
-    PacManPlayer pacMan = new SimplePacManPlayer();
+    PacManPlayer pacMan = new SPToDotPlayer();
     int maxLevel = Integer.MAX_VALUE;
     if (argMap.containsKey("-levels")) {
     		maxLevel = ((Double)argMap.get("-levels")).intValue();
