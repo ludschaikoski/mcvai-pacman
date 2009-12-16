@@ -6,16 +6,22 @@ import pacman.Location;
 import pacman.Move;
 import pacman.State;
 
+/**
+ * The interface describes the search technique for pacman.
+ *
+ * @author amounir, eartola
+ *
+ */
 public interface Search {
 	
 	/**
 	 * The methods takes a current state and returns the sequence
-	 * to get to the goal state from the current state.
+	 * to get pacman to a certain location from the current state.
 	 *
 	 * @param current current state.
-	 * @param goal goal state.
+	 * @param goal goal location.
 	 * @return an optimal sequence of moves from the current to the goal.
 	 */
-	List<Move> searchForState(State current, Location goal);
+	List<Move> searchForLocation(State current, Location goal);
 
 }
