@@ -2,6 +2,7 @@ package pacman;
 
 import ghosts.BasicGhostPlayer;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -10,11 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import java.awt.Color;
-
-import player.SPToDotPlayer;
-import player.SimplePacManPlayer;
-import util.Pair;
+import player.OptimalFullBoardPlayer;
 import util.Utils;
 
 /**
@@ -871,7 +868,8 @@ public class Game {
     Display display = new PacManGUI();
     // make pacman player, default keyboard
 //    PacManPlayer pacMan = new KeyboardPacManPlayer();
-    PacManPlayer pacMan = new SPToDotPlayer();
+    //PacManPlayer pacMan = new SPToDotPlayer();
+    PacManPlayer pacMan = new OptimalFullBoardPlayer();
     int maxLevel = Integer.MAX_VALUE;
     if (argMap.containsKey("-levels")) {
     		maxLevel = ((Double)argMap.get("-levels")).intValue();

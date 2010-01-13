@@ -13,7 +13,7 @@ import pacman.State;
  *
  */
 public interface Search {
-	
+
 	/**
 	 * The methods takes a current state and returns the sequence
 	 * to get pacman to a certain location from the current state.
