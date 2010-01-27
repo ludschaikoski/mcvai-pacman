@@ -1,8 +1,17 @@
 package pacman;
 
 import ghosts.BasicGhostPlayer;
+import ghosts.DaveGhostPlayer;
+import ghosts.QLGhost;
+import ghosts.StalkingGhostPlayer;
 
 import java.awt.Color;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,7 +20,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import player.OptimalFullBoardPlayer;
+import player.QLPlayer;
+import search.QLGTable;
+import search.QLTable;
+import search.SearchHelpers;
 import util.Utils;
 
 /**
@@ -30,7 +42,7 @@ public class Game {
 
   private final static int dotPointsValue = 10;
 
-  private final static int defaultNumberGhosts = 0;
+  private final static int defaultNumberGhosts = 2;
 
   private static Set<Location> allLocations = makeAllLocations();
 
@@ -40,12 +52,12 @@ public class Game {
 
   private static Location ghostPen = new Location(10, 15);
 
-  private static int ghostLaunchTimeSpacing = 10;
+  private static int ghostLaunchTimeSpacing = 20;
 
   // stuff about this instance of the game
   private Display display;
 
-  private int moveTime = 100;
+  private int moveTime = 20;
 
   private List<GhostPlayer> ghostPlayers;
 
@@ -453,6 +465,13 @@ public class Game {
     time++;
     if (nextState.getDotLocations().size() < currentState.getDotLocations().size())
       points += dotPointsValue;
+
+    ///////////////
+    //// UPDATE VALUES OF QTable
+    if (pacMan instanceof QLPlayer) {
+    	QLPlayer.updateQLTable(currentState, nextState, pacManMove);
+    }
+
     currentState = nextState;
     // display the new state
     return nextState;
@@ -706,7 +725,11 @@ public class Game {
    * @return a final State, either winning or losing
    * @param pacMan
    */
+  
+  PacManPlayer pacMan;
+  
   public void playOneBoardOneLife(final PacManPlayer pacMan) {
+	  this.pacMan = pacMan;
     if (display != null) {
       display.updateDisplay(this);
       try {
@@ -864,12 +887,57 @@ public class Game {
     Map<String, Object> argMap = Utils.parseCommandLineArguments(args, true);
     // choose display
     // text is default
-//    Display display = new TextDisplay();
+    //Display display = new TextDisplay();
+    
+    FileInputStream fis = null;
+    ObjectInputStream ois = null;
+
+    try {
+
+		fis = new FileInputStream("qtable");
+		ois = new ObjectInputStream(fis);
+		
+		SearchHelpers.QL_TABLE = (QLTable) ois.readObject();
+
+
+	} catch (Exception e) {
+
+		SearchHelpers.QL_TABLE = new QLTable();
+
+	}
+	
+	try {
+
+		fis = new FileInputStream("qgtable");
+		ois = new ObjectInputStream(fis);
+		
+		SearchHelpers.QLG_TABLE = (QLGTable) ois.readObject();
+
+
+	} catch (Exception e) {
+
+		SearchHelpers.QLG_TABLE = new QLGTable();
+
+	}
+	
+	FileOutputStream fout = null;
+	
+	try {
+		fout = new FileOutputStream("log.log");
+	} catch (Exception e) {
+	}
+    
     Display display = new PacManGUI();
+
+    //Display display = null;
+    
     // make pacman player, default keyboard
 //    PacManPlayer pacMan = new KeyboardPacManPlayer();
     //PacManPlayer pacMan = new SPToDotPlayer();
-    PacManPlayer pacMan = new OptimalFullBoardPlayer();
+    
+    for (int gameNo = 1; gameNo < 1000; gameNo++) {
+   //try {
+    PacManPlayer pacMan = new QLPlayer();
     int maxLevel = Integer.MAX_VALUE;
     if (argMap.containsKey("-levels")) {
     		maxLevel = ((Double)argMap.get("-levels")).intValue();
@@ -956,7 +1024,7 @@ public class Game {
             color = Color.GRAY;
             break;
         }
-        GhostPlayer ghost = new BasicGhostPlayer();
+        GhostPlayer ghost = new QLGhost();
         ghost.setColor(color);
         ghost.setName(name);
         ghostPlayers.add(ghost);
@@ -973,10 +1041,49 @@ public class Game {
     // set up game
     Game game = new Game(ghostPlayers, display);
     // play
-    int[] stats = game.playGame(pacMan, 3, dots, maxLevel);
-    System.err.println("Points: " + stats[0]);
-    System.err.println("Levels: " + stats[1]);
-    System.err.println("Time:   " + stats[2]);
+    int[] stats = game.playGame(pacMan, 20, dots, maxLevel);
+    
+    String log = "";
+    log += "Games: " + gameNo + "\n";
+    log += "Points: " + stats[0] + "\n";
+    log += "Levels: " + stats[1] + "\n";
+    log += "Time:   " + stats[2] + "\n\n";
+    
+    try {
+		fout.write(log.getBytes());
+	} catch (IOException e1) {
+		e1.printStackTrace();
+	}
+    
+    FileOutputStream fos = null;
+    ObjectOutputStream oos = null;
+
+    try {
+
+    	fos = new FileOutputStream("qtable");
+    	oos = new ObjectOutputStream(fos);
+    	oos.writeObject(SearchHelpers.QL_TABLE);
+    	oos.close();
+    	fos.close();
+
+    } catch (Exception e) {
+    	e.printStackTrace();
+    }
+    
+    try {
+
+    	fos = new FileOutputStream("qgtable");
+    	oos = new ObjectOutputStream(fos);
+    	oos.writeObject(SearchHelpers.QLG_TABLE);
+    	oos.close();
+    	fos.close();
+
+    } catch (Exception e) {
+    	e.printStackTrace();
+    }
+   //} catch (Exception e) {}
+  }
+    
   }
 }
 
