@@ -3,6 +3,7 @@ package search;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import pacman.Game;
@@ -120,7 +121,7 @@ public class AStarSearch implements Search {
 	 */
 	 class OptimizedState {
 		 
-		 private int[] dotsLocs = new int[10];
+		 private int[] dotsLocs = new int[8];
 		 private Move from;
 		 private OptimizedState fromState;
 		 private int pacmanLocIndex;
@@ -138,8 +139,8 @@ public class AStarSearch implements Search {
 			setPacmanLocIndex(SearchHelpers.LOCATION_INT_MAPPING.get(current.getPacManLocation()));
 			
 			for (Location dotLoc : current.getDotLocations()) {
-				int dotLocIndex = SearchHelpers.LOCATION_INT_MAPPING.get(dotLoc);
-				getDotsLocs()[dotLocIndex / 32] |= 1 << (dotLocIndex % 32);
+				int dotLocIndex = SearchHelpers.DOT_LOCATION_INT_MAPPING.get(dotLoc);
+				dotsLocs[dotLocIndex / 32] |= 1 << (dotLocIndex % 32);
 			}
 		}
 		
@@ -162,14 +163,14 @@ public class AStarSearch implements Search {
 		public State toState() {
 			Location pacmanLocation = SearchHelpers.ALL_LOCATIONS[pacmanLocIndex];
 
-			int locCount = SearchHelpers.ALL_LOCATIONS.length;
+			int locCount = SearchHelpers.DOT_LOCATIONS.length;
 			LocationSet dotsLocations = new LocationSet();
 			for (int i = 0; i < locCount; i++) {
-				int dotsLocIndex = SearchHelpers.LOCATION_INT_MAPPING.get(SearchHelpers.ALL_LOCATIONS[i]);
+				int dotsLocIndex = SearchHelpers.DOT_LOCATION_INT_MAPPING.get(SearchHelpers.DOT_LOCATIONS[i]);
 				if (((1 << (dotsLocIndex % 32)) & (dotsLocs[dotsLocIndex / 32])) == 0) {
 					continue;
 				}
-				dotsLocations.add(SearchHelpers.ALL_LOCATIONS[dotsLocIndex]);
+				dotsLocations.add(SearchHelpers.DOT_LOCATIONS[dotsLocIndex]);
 			}
 			
 			State res = new State(pacmanLocation, new ArrayList<Location>(), dotsLocations, new ArrayList<Move>(), null);
@@ -236,16 +237,16 @@ public class AStarSearch implements Search {
 		 * @param locationID
 		 */
 		public void flipDotAtLocation(int locationID) {
-			getDotsLocs()[locationID / 32] ^= 1 << (locationID % 32);
+			dotsLocs[locationID / 32] ^= 1 << (locationID % 32);
 		}
 
 		void setDotsLocs(int[] dotsLocs) {
 			this.dotsLocs = dotsLocs;
 		}
 
-		int[] getDotsLocs() {
+		/*int[] getDotsLocs() {
 			return dotsLocs;
-		}
+		}*/
 
 		void setFrom(Move from) {
 			this.from = from;
@@ -322,174 +323,66 @@ public class AStarSearch implements Search {
 	 */
 	public List<Move> searchForEmptyBoard(State startingState) {
 		
-		PriorityQueue<OptimizedState> statesPQ = new PriorityQueue<OptimizedState>();
-		statesPQ.add(new OptimizedState(startingState, Move.NONE, null, 0), -1 * aStarHeuristic.calculateHeuristicCost(startingState));
-		HashMap<OptimizedState, OptimizedState> getToState = new HashMap<OptimizedState, OptimizedState>();
+		int iterDeepInit = (int) aStarHeuristic.calculateHeuristicCost(startingState);
+		for (int iterDeepCost = 292; ; iterDeepCost++) {
+			
+			System.out.println("Iteration cost max = " + iterDeepCost);
 		
-		for (int iter = 1; ! statesPQ.isEmpty(); iter++) {
+			PriorityQueue<OptimizedState> statesPQ = new PriorityQueue<OptimizedState>();
+			HashSet<OptimizedState> visitedState = new HashSet<OptimizedState>();
+
+			statesPQ.add(new OptimizedState(startingState, Move.NONE, null, 0), -1 * aStarHeuristic.calculateHeuristicCost(startingState));
 			
-			//OptimizedState starting = new OptimizedState(startingState, Move.NONE, null, 0);
-			OptimizedState current = statesPQ.removeFirst();
-			
-			if (getToState.get(current) != null) {
-				continue;
-			}
+			for (int iter = 1; ! statesPQ.isEmpty(); iter++) {
 
-			getToState.put(current, current.getFromState());
-
-			if (isGoalState(current)) { // Construct the path
-				ArrayList<Move> ret = new ArrayList<Move>();
-
-				while (true) {
-					//Move pmanMove = null;
-					OptimizedState from = getToState.get(current);
-					
-					if (from == null) {
-						break;
-					}
-					
-					Location fromLocation = SearchHelpers.ALL_LOCATIONS[from.getPacmanLocIndex()];
-					Location currLocation = SearchHelpers.ALL_LOCATIONS[current.getPacmanLocIndex()];
-
-					if (fromLocation.getX() < currLocation.getX()) {
-						int diff = currLocation.getX() - fromLocation.getX();
-						for (int i = 0; i < diff; i++) {
-							ret.add(Move.RIGHT);
-						}
-					}
-					if (fromLocation.getX() > currLocation.getX()) {
-						int diff = currLocation.getX() - fromLocation.getX();
-						for (int i = 0; i < -diff; i++) {
-							ret.add(Move.LEFT);
-						}
-					}
-					if (fromLocation.getY() < currLocation.getY()) {
-						int diff = currLocation.getY() - fromLocation.getY();
-						for (int i = 0; i < diff; i++) {
-							ret.add(Move.UP);
-						}
-					}
-					if (fromLocation.getY() > currLocation.getY()) {
-						int diff = currLocation.getY() - fromLocation.getY();
-						for (int i = 0; i < -diff; i++) {
-							ret.add(Move.DOWN);
-						}
-					}
-					
-					current = from;
-//
-//					OptimizedState previous = new OptimizedState(current);
-//					int movesCount = 0;
-//
-//					while(true) {
-//						
-//						movesCount++;
-//						previous.movePacman(pmanMove);
-//						if (previous.equals(starting)) {
-//							break;
-//						}
-//						List<Move> moves = getPossibleMoves(previous.getPacmanLocIndex());
-//						if (moves.size() > 2 || !moves.get(0).equals(moves.get(1).getOpposite())) {
-//							break;
-//						}
-//					}
-//
-//					if (getToState.get(previous) != null) {
-//						current = new OptimizedState(previous);
-//						System.out.println("Pacman Location: " + SearchHelpers.ALL_LOCATIONS[current.getPacmanLocIndex()]);
-//						for (int i = 0; i < movesCount; i++) {
-//							ret.add(pmanMove.getOpposite());
-//						}
-//						if (current.equals(starting)) {
-//							break;
-//						}
-//						continue;
-//					}
-//
-//					previous = new OptimizedState(current);
-//					movesCount = 0;
-//
-//					while(true) {
-//						movesCount++;
-//						if (starting.containsDot(previous.getPacmanLocIndex())) {
-//							previous.flipDotAtLocation(previous.getPacmanLocIndex());
-//						}
-//						previous.movePacman(pmanMove);
-//						if (previous.equals(starting)) {
-//							break;
-//						}
-//						List<Move> moves = getPossibleMoves(previous.getPacmanLocIndex());
-//						if (moves.size() > 2 || !moves.get(0).equals(moves.get(1).getOpposite())) {
-//							break;
-//						}
-//					}
-//					
-//					if (getToState.get(previous) != null) {
-//						current = new OptimizedState(previous);
-//						System.out.println("Pacman Location: " + SearchHelpers.ALL_LOCATIONS[current.getPacmanLocIndex()]);
-//						for (int i = 0; i < movesCount; i++) {
-//							ret.add(pmanMove.getOpposite());
-//						}
-//						if (current.equals(starting)) {
-//							break;
-//						}
-//						continue;
-//					}
-
-				}
-				Collections.reverse(ret);
-				return ret;
-			}
-
-			////
-			// Display
-			////
-			if (iter % 1000 == 0)
-				System.out.println("Iteration: " + iter);
-
-			////
-			// End of Display
-			////
-
-			State currentState = current.toState();
-			List<Move> possibleMoves = Game.getLegalPacManMoves(currentState);
-			for (Move pmanMove : possibleMoves) {
-				if (!current.getFrom().equals(Move.NONE) && pmanMove.equals(current.getFrom().getOpposite())) {
+				OptimizedState current = statesPQ.removeFirst();
+				
+				if (visitedState.contains(current)) {
 					continue;
+				}	
+				visitedState.add(current);
+
+				if (isGoalState(current)) { // Construct the path
+					ArrayList<Move> ret = new ArrayList<Move>();
+					ret.add(Move.RIGHT);
+					Collections.reverse(ret);
+					return ret;
 				}
+	
+				////
+				// Display
+				////
+				if (iter % 100000 == 0) {
+					System.gc();
+					System.out.println("Iteration: " + iter);
+				}
+	
+				////
+				// End of Display
+				////
+	
+				State currentState = current.toState();
+				List<Move> possibleMoves = Game.getLegalPacManMoves(currentState);
+				for (Move pmanMove : possibleMoves) {
+					State nextState = Game.getNextState(currentState, pmanMove);
+					OptimizedState opNextState = new OptimizedState(nextState, pmanMove, current, current.getCost() + 1);
 
-				// Now with every possible move we will move until we find a junction.
-				boolean junction = false;
-				State nextState = currentState;
-
-				int moveCost = 0;
-				while (!junction) {
-
-					if (Game.isWinning(nextState)) {
-						break;
+					if (visitedState.contains(opNextState)) {
+						continue;
 					}
 
-					nextState = Game.getNextState(nextState, pmanMove);
-					moveCost++;
-					List<Move> nextMoves = Game.getLegalPacManMoves(nextState);
-					if (nextMoves.size() != 2 || !nextMoves.get(0).getOpposite().equals(nextMoves.get(1))) {
-						junction = true;
-					}
-				}
-
-				OptimizedState opNextState = new OptimizedState(nextState, pmanMove, current, current.getCost() + moveCost);
-				if (getToState.get(opNextState) == null) {
 					if (Game.isWinning(nextState)) {
-						statesPQ.add(opNextState, -1 * opNextState.getCost());
+						statesPQ.relaxPriority(opNextState, -1 * opNextState.getCost());
 					} else {
-						statesPQ.add(opNextState, -1 * (opNextState.getCost() + aStarHeuristic.calculateHeuristicCost(nextState)));
+						double nextStateCost = (opNextState.getCost() + aStarHeuristic.calculateHeuristicCost(nextState));
+						if (nextStateCost <= iterDeepCost) {
+							statesPQ.relaxPriority(opNextState, -1 * nextStateCost);
+						}
 					}
 				}
+	
 			}
-
 		}
-
-		return null; // Return null if we cannot come to that location.
 	}
 
 	private boolean isGoalState(OptimizedState current) {

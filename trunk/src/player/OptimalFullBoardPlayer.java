@@ -19,10 +19,13 @@ public class OptimalFullBoardPlayer implements PacManPlayer {
 	public Move chooseMove(Game game) {
 
 		if (pacmanMoves != null && pacmanMoves.size() != 0)
-			return pacmanMoves.remove(0);
+			return pacmanMoves.get(0);
 
 		SearchHelpers.ALL_LOCATIONS = new Location[Game.getAllLocations().size()];
 		SearchHelpers.LOCATION_INT_MAPPING = new HashMap<Location, Integer>();
+
+		SearchHelpers.DOT_LOCATIONS = new Location[game.getCurrentState().getDotLocations().size()];
+		SearchHelpers.DOT_LOCATION_INT_MAPPING = new HashMap<Location, Integer>();
 
 		int index = 0;
 		for (Location loc : Game.getAllLocations()) {
@@ -30,9 +33,15 @@ public class OptimalFullBoardPlayer implements PacManPlayer {
 			SearchHelpers.LOCATION_INT_MAPPING.put(loc, index++);
 		}
 
+		index = 0;
+		for (Location loc : game.getCurrentState().getDotLocations()) {
+			SearchHelpers.DOT_LOCATIONS[index] = loc;
+			SearchHelpers.DOT_LOCATION_INT_MAPPING.put(loc, index++);
+		}
+
 		AStarSearch searchTechnique = new AStarSearch(new FullBoardHeuristic());
 		pacmanMoves = searchTechnique.searchForEmptyBoard(game.getCurrentState());
-		return pacmanMoves.remove(0);
+		return pacmanMoves.get(0);
 	}
 
 }
